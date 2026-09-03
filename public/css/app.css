@@ -1,9 +1,9 @@
 /*
- * AV-UI-001 — glue de mise en page propre à la page d'accueil (hero,
- * espacements, dégagement pour la nav mobile fixe). Volontairement séparé
- * de css/trouvailles.css (pack de charte fourni, non modifié) pour que la
- * charte reste remplaçable/mettable à jour telle quelle. N'utilise que les
- * variables déjà définies par trouvailles.css — aucune couleur nouvelle.
+ * TRV-UI-002 — glue de mise en page propre à l'écran d'accueil réel (hero,
+ * section "Mes Trouvailles", états vide/erreur, dégagement pour la nav
+ * mobile fixe). Volontairement séparé de css/trouvailles.css (pack de
+ * charte fourni, non modifié). N'utilise que les variables --tv-* déjà
+ * définies — aucune couleur nouvelle (AV-UI-001 §4).
  */
 
 .tv-hero {
@@ -16,48 +16,25 @@
 
 .tv-hero__illustration {
   width: 100%;
-  max-width: 320px;
+  max-width: 300px;
   justify-self: end;
 }
 
-.tv-hero__tagline {
-  font-family: var(--tv-font-display);
-  font-style: italic;
-  color: var(--tv-green);
+.tv-hero__subtitle {
+  color: var(--tv-muted);
+  font-size: 16px;
+  max-width: 46ch;
+  margin-top: 10px;
+}
+
+.tv-trouvailles__title {
+  margin: 8px 0 24px;
+}
+
+.tv-opportunity__title {
   font-size: 18px;
-  margin: 10px 0 18px;
-}
-
-.tv-hero__pipeline {
-  color: var(--tv-muted);
-  font-size: 14px;
-}
-
-.tv-status {
-  margin-top: 26px;
-}
-
-.tv-section-title {
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  font-size: 12px;
-  color: var(--tv-muted);
   font-weight: 700;
-  margin: 48px 0 16px;
-}
-
-.tv-example-label {
-  font-size: 13px;
-  color: var(--tv-muted);
-  margin: 0 0 18px;
-}
-
-.tv-preview-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 28px;
+  margin: 16px 0 14px;
 }
 
 .tv-icon {
@@ -66,8 +43,30 @@
   vertical-align: -3px;
 }
 
-.tv-opportunity {
-  max-width: 420px;
+.tv-opportunity__body .tv-badge {
+  margin-bottom: 14px;
+}
+
+.tv-opportunity__body .tv-button {
+  width: 100%;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tv-state {
+  padding: 48px 32px;
+  text-align: center;
+  color: var(--tv-muted);
+}
+
+.tv-state__title {
+  font-family: var(--tv-font-display);
+  font-size: 20px;
+  color: var(--tv-ink);
+  margin: 0 0 8px;
 }
 
 @media (max-width: 1024px) {
@@ -76,8 +75,8 @@
 
 @media (max-width: 720px) {
   .tv-hero { grid-template-columns: 1fr; padding: 32px 0 24px; text-align: center; }
-  .tv-hero__illustration { max-width: 200px; justify-self: center; }
-  .tv-opportunity { max-width: 100%; }
+  .tv-hero__illustration { max-width: 190px; justify-self: center; }
+  .tv-hero__subtitle { margin-left: auto; margin-right: auto; }
   /* dégagement pour la nav mobile fixe du pack (tv-mobile-nav, ~88px) */
   body { padding-bottom: 88px; }
 }

@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 /**
- * Point d'entrée HTTP unique du squelette initial, désormais habillé de la
- * charte graphique V1 (AV-UI-001 — pack `docs/brand-v1/`, CSS intact dans
- * public/css/trouvailles.css). Toujours aucune logique métier propre : la
- * seule donnée réelle affichée est le statut de connexion à la base,
- * inchangé depuis le squelette initial.
+ * TRV-UI-002 — véritable écran d'accueil « Mes Trouvailles », habillé de
+ * la charte V1 (AV-UI-001). Aucun moteur de valorisation, aucun second
+ * système de confiance : les cartes affichent exclusivement des colonnes
+ * déjà présentes dans le schéma TRV-001-C (opportunities.asking_price/
+ * market_value/discount_percentage, market_valuations.valuation_status),
+ * lues telles quelles par OpportunityRepository — jamais recalculées ici.
  *
  * Résolution de ROOT : par défaut, app/ est un dossier frère de public/
  * (disposition du dépôt en local). Si un fichier app-root.php existe à
@@ -22,17 +23,57 @@ define('ROOT', $root);
 
 require ROOT . '/app/Core/autoload.php';
 
-use Trouvailles\Core\Database;
+use Trouvailles\Persistence\OpportunityRepository;
 
-$dbConnectee = false;
-$dbErreur = null;
+/**
+ * Mappe market_valuations.valuation_status (existant, TRV-001-C) vers les
+ * trois états de confiance V1 — jamais un nouveau système de confiance,
+ * simple présentation de la colonne existante (§4/§10 du mandat).
+ *
+ * @return array{label:string, class:string}
+ */
+function confianceAffichage(string $valuationStatus): array
+{
+    return match ($valuationStatus) {
+        'valid' => ['label' => 'Confiance élevée', 'class' => 'tv-badge--high'],
+        'thin_evidence' => ['label' => 'Confiance moyenne', 'class' => 'tv-badge--medium'],
+        default => ['label' => 'Données insuffisantes', 'class' => 'tv-badge--insufficient'],
+    };
+}
+
+/**
+ * @param int $diffSecondes écart déjà calculé côté MySQL (TIMESTAMPDIFF,
+ *     voir OpportunityRepository) — jamais recalculé depuis l'horloge PHP,
+ *     qui peut être sur un fuseau différent de celui de MySQL.
+ */
+function fraicheur(int $diffSecondes): string
+{
+    if ($diffSecondes < 60) {
+        return "à l'instant";
+    }
+    if ($diffSecondes < 3600) {
+        return 'il y a ' . intdiv($diffSecondes, 60) . ' min';
+    }
+    if ($diffSecondes < 86400) {
+        return 'il y a ' . intdiv($diffSecondes, 3600) . ' h';
+    }
+
+    return 'il y a ' . intdiv($diffSecondes, 86400) . ' j';
+}
+
+function e(?string $valeur): string
+{
+    return htmlspecialchars($valeur ?? '', ENT_QUOTES, 'UTF-8');
+}
+
+$opportunites = [];
+$erreurChargement = false;
 
 try {
-    Database::connection();
-    $dbConnectee = true;
-} catch (\Throwable $e) {
-    $dbErreur = $e->getMessage();
-    error_log('[trouvailles][db] ' . $dbErreur);
+    $opportunites = OpportunityRepository::default()->findRecent();
+} catch (\Throwable $exception) {
+    $erreurChargement = true;
+    error_log('[trouvailles][opportunites] ' . $exception->getMessage());
 }
 
 ?><!doctype html>
@@ -63,76 +104,81 @@ try {
 
   <section class="tv-hero">
     <div>
-      <h1 class="tv-display">Trouvailles</h1>
-      <p class="tv-hero__tagline">Ce qui vaut vraiment le coup.</p>
-      <p class="tv-hero__pipeline">
-        Annonce → Prix → Valeur estimée → Décote → Preuves → Confiance → Action.
-        Aucune logique métier n'est encore branchée à cette page — le squelette
-        applicatif (sources, persistance) est décrit dans <code>docs/TRV-001-C.md</code>
-        et <code>docs/TRV-002.md</code>.
-      </p>
-      <p class="tv-status">
-        <?php if ($dbConnectee): ?>
-          <span class="tv-badge tv-badge--high">
-            <img class="tv-icon" src="/assets/icons/shield.svg" alt="">
-            Base de données connectée
-          </span>
-        <?php else: ?>
-          <span class="tv-badge tv-badge--insufficient">
-            <img class="tv-icon" src="/assets/icons/shield.svg" alt="">
-            Base de données non connectée
-          </span>
-        <?php endif; ?>
+      <h1 class="tv-display">Quelles sont les bonnes affaires pour vous aujourd'hui&nbsp;?</h1>
+      <p class="tv-hero__subtitle">
+        Trouvailles détecte les annonces qui semblent réellement sous-évaluées
+        et vous explique pourquoi.
       </p>
     </div>
     <img class="tv-hero__illustration" src="/assets/illustrations/chercheur-editorial.svg" alt="">
   </section>
 
-  <h2 class="tv-section-title">Aperçu des composants</h2>
-  <p class="tv-example-label">
-    Exemple d'intégration de la charte — aucune donnée réelle, à connecter aux
-    annonces/valorisations réelles dans une mission produit ultérieure.
-  </p>
+  <section>
+    <h2 class="tv-display tv-trouvailles__title">Mes Trouvailles</h2>
 
-  <div class="tv-preview-row">
-    <button class="tv-button" type="button">Voir l'annonce <img class="tv-icon" src="/assets/icons/arrow.svg" alt=""></button>
-    <button class="tv-button tv-button--secondary" type="button">En savoir plus</button>
-    <span class="tv-badge tv-badge--high"><img class="tv-icon" src="/assets/icons/confidence.svg" alt="">Confiance élevée</span>
-    <span class="tv-badge tv-badge--medium"><img class="tv-icon" src="/assets/icons/confidence.svg" alt="">Confiance moyenne</span>
-    <span class="tv-badge tv-badge--insufficient"><img class="tv-icon" src="/assets/icons/confidence.svg" alt="">Données insuffisantes</span>
-  </div>
+    <?php if ($erreurChargement): ?>
 
-  <div class="tv-card tv-opportunity">
-    <img class="tv-opportunity__image" src="/assets/patterns/dots.svg" alt="">
-    <div class="tv-opportunity__body">
-      <span class="tv-badge tv-badge--medium">
-        <img class="tv-icon" src="/assets/icons/confidence.svg" alt="">Confiance moyenne
-      </span>
-      <div class="tv-opportunity__metrics">
-        <div class="tv-opportunity__metric">
-          <div class="tv-opportunity__label">Prix demandé</div>
-          <div class="tv-price">129 €</div>
-        </div>
-        <div class="tv-opportunity__metric">
-          <div class="tv-opportunity__label">Valeur estimée</div>
-          <div class="tv-market-value">189 €</div>
-        </div>
-        <div class="tv-opportunity__metric">
-          <div class="tv-opportunity__label">Décote</div>
-          <div class="tv-discount">
-            <img class="tv-icon" src="/assets/icons/tag-percent.svg" alt="">−32&nbsp;%
-          </div>
-        </div>
+      <div class="tv-card tv-state">
+        <p>Impossible de charger les Trouvailles pour le moment.</p>
       </div>
-      <p class="tv-opportunity__source">
-        <img class="tv-icon" src="/assets/icons/pin.svg" alt="">
-        Exemple ·
-        <img class="tv-icon" src="/assets/icons/clock.svg" alt="">
-        il y a 2&nbsp;h
-      </p>
-      <button class="tv-button" type="button">Voir l'annonce <img class="tv-icon" src="/assets/icons/external.svg" alt=""></button>
-    </div>
-  </div>
+
+    <?php elseif ($opportunites === []): ?>
+
+      <div class="tv-card tv-state">
+        <p class="tv-state__title">Aucune Trouvaille pour le moment</p>
+        <p>Nous n'avons pas encore détecté d'offre correspondant à vos critères.</p>
+      </div>
+
+    <?php else: ?>
+
+      <div class="tv-grid tv-grid--opportunities">
+        <?php foreach ($opportunites as $opportunite): ?>
+          <?php $confiance = confianceAffichage($opportunite['valuation_status']); ?>
+          <article class="tv-card tv-opportunity">
+            <img class="tv-opportunity__image" src="/assets/patterns/dots.svg" alt="">
+            <div class="tv-opportunity__body">
+              <h3 class="tv-opportunity__title"><?= e($opportunite['title'] ?? 'Produit') ?></h3>
+
+              <div class="tv-opportunity__metrics">
+                <div class="tv-opportunity__metric">
+                  <div class="tv-opportunity__label">Prix demandé</div>
+                  <div class="tv-price"><?= number_format((float) $opportunite['asking_price'], 0, ',', ' ') ?>&nbsp;€</div>
+                </div>
+                <div class="tv-opportunity__metric">
+                  <div class="tv-opportunity__label">Valeur estimée</div>
+                  <div class="tv-market-value">≈&nbsp;<?= number_format((float) $opportunite['market_value'], 0, ',', ' ') ?>&nbsp;€</div>
+                </div>
+                <div class="tv-opportunity__metric">
+                  <div class="tv-opportunity__label">Décote</div>
+                  <div class="tv-discount">
+                    <img class="tv-icon" src="/assets/icons/tag-percent.svg" alt="">
+                    <?= round((float) $opportunite['discount_percentage']) ?>&nbsp;%
+                  </div>
+                </div>
+              </div>
+
+              <span class="tv-badge <?= $confiance['class'] ?>">
+                <img class="tv-icon" src="/assets/icons/confidence.svg" alt="">
+                <?= $confiance['label'] ?>
+              </span>
+
+              <p class="tv-opportunity__source">
+                <?= e($opportunite['source_name']) ?> ·
+                <img class="tv-icon" src="/assets/icons/clock.svg" alt="">
+                détecté <?= fraicheur((int) $opportunite['secondes_ecoulees']) ?>
+              </p>
+
+              <a class="tv-button" href="<?= e($opportunite['url']) ?>" target="_blank" rel="noopener">
+                Voir l'annonce
+                <img class="tv-icon" src="/assets/icons/external.svg" alt="">
+              </a>
+            </div>
+          </article>
+        <?php endforeach; ?>
+      </div>
+
+    <?php endif; ?>
+  </section>
 
 </main>
 

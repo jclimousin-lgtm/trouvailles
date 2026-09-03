@@ -10,6 +10,10 @@ produit, calcul de valeur de marché ou moteur d'opportunité — voir
 Habillage graphique V1 (AV-UI-001) intégré : palette/typographie/composants
 de `docs/brand-v1/` chargés dans `public/index.php` (voir `docs/AV-UI-001.md`).
 
+Écran d'accueil réel « Mes Trouvailles » (TRV-UI-002) : branché sur
+`OpportunityRepository`, données réelles ou état vide honnête — jamais de
+donnée fabriquée (voir `docs/TRV-UI-002.md`).
+
 ## Structure
 
 ```
@@ -18,7 +22,7 @@ app/
 ├── Http/         HttpClientInterface, CurlHttpClient (aucun contournement anti-bot)
 ├── Sources/      NormalizedListing, MarketplaceAdapterInterface, SourceManager,
 │                 Leboncoin/, Vinted/, Ebay/ (Client + Adapter par marketplace)
-├── Persistence/  ListingPersister (listings + price_observations)
+├── Persistence/  ListingPersister (écriture), OpportunityRepository (lecture accueil)
 ├── Models/       (vide — réservé)
 ├── Services/     (vide — réservé)
 └── Controllers/  (vide — réservé)
@@ -34,8 +38,8 @@ tests/            TestRunner.php, assertions.php, run.php (schéma),
                    run_leboncoin_adapter.php, run_vinted_adapter.php,
                    run_ebay_adapter.php, run_listing_persister.php,
                    Support/FixtureHttpClient.php, fixtures/*.json
-docs/             TRV-001-C.md, TRV-002.md, AV-UI-001.md (rapports de mission),
-                   brand-v1/ (README + usage.md du pack de charte fourni)
+docs/             TRV-001-C.md, TRV-002.md, AV-UI-001.md, TRV-UI-002.md
+                   (rapports de mission), brand-v1/ (pack de charte fourni)
 ```
 
 ## Migrations
@@ -58,12 +62,15 @@ Base locale MariaDB : `trouvailles`, utilisateur `trouvailles_app`
 
 ## Déploiement (o2switch, compte nare8592)
 
-- Sous-domaine : `trouvailles.serviceproi.fr`
+- Sous-domaine : `trouvailles.serviceproi.fr` — docroot = contenu de `public/`
 - Base MySQL prod : `nare8592_trouvailles`
 - Identifiants (LOCAL + PROD) : `~/.config/o2switch/trouvailles-db.env`
   (hors dépôt, chmod 600), complète `~/.config/o2switch/nare8592.env`
   (FTP/cPanel génériques du compte, communs à tous les projets)
-- Config prod hors docroot : `trouvailles-config-prive/db.php` (sibling
-  du docroot sur le serveur, jamais dans le dépôt) — même convention que
-  juridico/poesie-site/convergences
-- Transfert : `scripts/deploy.sh` (lftp), voir le script pour le détail
+- Code applicatif hors docroot : `trouvailles-app-prive/` (sibling du
+  docroot sur le serveur) — mirroir de `app/`, `config/`, `tools/`,
+  `database/` + `.env` prod réel ; relié au docroot via `public/app-root.php`
+  (gitignored, déployé uniquement, jamais commité)
+- Transfert : `lftp` manuel (mirror du dossier `public/` vers le docroot et
+  de `app/`+`config/`+`tools/`+`database/` vers `trouvailles-app-prive/`),
+  aucun script conservé dans le dépôt à ce jour
