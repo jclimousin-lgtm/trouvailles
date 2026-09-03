@@ -1,0 +1,83 @@
+/*
+ * AV-UI-001 — glue de mise en page propre à la page d'accueil (hero,
+ * espacements, dégagement pour la nav mobile fixe). Volontairement séparé
+ * de css/trouvailles.css (pack de charte fourni, non modifié) pour que la
+ * charte reste remplaçable/mettable à jour telle quelle. N'utilise que les
+ * variables déjà définies par trouvailles.css — aucune couleur nouvelle.
+ */
+
+.tv-hero {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 40px;
+  align-items: center;
+  padding: 56px 0 40px;
+}
+
+.tv-hero__illustration {
+  width: 100%;
+  max-width: 320px;
+  justify-self: end;
+}
+
+.tv-hero__tagline {
+  font-family: var(--tv-font-display);
+  font-style: italic;
+  color: var(--tv-green);
+  font-size: 18px;
+  margin: 10px 0 18px;
+}
+
+.tv-hero__pipeline {
+  color: var(--tv-muted);
+  font-size: 14px;
+}
+
+.tv-status {
+  margin-top: 26px;
+}
+
+.tv-section-title {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 12px;
+  color: var(--tv-muted);
+  font-weight: 700;
+  margin: 48px 0 16px;
+}
+
+.tv-example-label {
+  font-size: 13px;
+  color: var(--tv-muted);
+  margin: 0 0 18px;
+}
+
+.tv-preview-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.tv-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+}
+
+.tv-opportunity {
+  max-width: 420px;
+}
+
+@media (max-width: 1024px) {
+  .tv-hero { grid-template-columns: 1.15fr 1fr; }
+}
+
+@media (max-width: 720px) {
+  .tv-hero { grid-template-columns: 1fr; padding: 32px 0 24px; text-align: center; }
+  .tv-hero__illustration { max-width: 200px; justify-self: center; }
+  .tv-opportunity { max-width: 100%; }
+  /* dégagement pour la nav mobile fixe du pack (tv-mobile-nav, ~88px) */
+  body { padding-bottom: 88px; }
+}

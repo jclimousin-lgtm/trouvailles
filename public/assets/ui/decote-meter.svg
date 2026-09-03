@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title desc">
+<title id="title">Trouvailles — jauge de décote</title>
+<desc id="desc">Asset de la charte graphique Trouvailles V1.</desc>
+<rect x="8" y="43" width="84" height="6" rx="3" fill="#DAD7CE"/><rect x="8" y="43" width="55" height="6" rx="3" fill="#176B52"/><circle cx="63" cy="46" r="9" fill="#176B52"/><text x="63" y="50" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="6.5" font-weight="700" fill="#F7F4EC">25%</text><text x="8" y="36" font-family="Arial, Helvetica, sans-serif" font-size="5.5" fill="#20201E">0%</text><text x="92" y="36" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="5.5" fill="#20201E">50%+</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title desc">
+<title id="title">Trouvailles — illustration éditoriale</title>
+<desc id="desc">Asset de la charte graphique Trouvailles V1.</desc>
+
+<rect width="100" height="100" fill="#F7F4EC"/>
+<circle cx="73" cy="30" r="20" fill="none" stroke="#B8DCC7" stroke-width="2" stroke-dasharray="4 4"/>
+<path d="M8 82h84" stroke="#20201E" stroke-width="2"/>
+<!-- chineur -->
+<path d="M29 70c3-12 10-20 20-20 8 0 14 5 17 13l-4 19H31z" fill="#176B52"/>
+<circle cx="45" cy="45" r="9" fill="#F2C7A2"/>
+<path d="M36 43c2-9 15-12 22-4-2-10-20-14-25-1z" fill="#20201E"/>
+<path d="M53 49c5 4 9 8 14 12" fill="none" stroke="#F2C7A2" stroke-width="6" stroke-linecap="round"/>
+<!-- loupe -->
+<circle cx="70" cy="31" r="10" fill="#F7F4EC" stroke="#20201E" stroke-width="3"/>
+<path d="m77 38 10 10" stroke="#20201E" stroke-width="4" stroke-linecap="round"/>
+<!-- shelf/object -->
+<path d="M58 78h30" stroke="#20201E" stroke-width="3"/>
+<rect x="65" y="66" width="12" height="12" rx="2" fill="#E8873D"/>
+<path d="M71 66V57" stroke="#20201E" stroke-width="2"/>
+<path d="M17 75h10l3-7h-9z" fill="#B8DCC7"/>
+<path d="M20 68v-8M25 68v-10" stroke="#176B52" stroke-width="2"/>
+<path d="M83 17h6M86 14v6M13 27h5M15.5 24.5v5" stroke="#E8873D" stroke-width="2"/>
+
+</svg>

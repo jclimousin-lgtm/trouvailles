@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title desc">
+<title id="title">Trouvailles — motif points</title>
+<desc id="desc">Asset de la charte graphique Trouvailles V1.</desc>
+<defs><pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#176B52" opacity=".45"/></pattern></defs><rect width="100" height="100" fill="url(#dots)"/>
+</svg>

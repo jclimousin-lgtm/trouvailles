@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title desc">
+<title id="title">Trouvailles — symbole</title>
+<desc id="desc">Asset de la charte graphique Trouvailles V1.</desc>
+
+<g fill="none" stroke="#20201E" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M18 20 48 8c5-2 10 0 12 5l8 20-20 30c-3 5-10 7-15 4L16 58c-5-3-7-9-4-14z" fill="#176B52" stroke="none"/>
+  <circle cx="30" cy="22" r="4.2" fill="#F7F4EC" stroke="none"/>
+  <circle cx="55" cy="55" r="17" fill="#F7F4EC" stroke-width="4"/>
+  <path d="m68 68 18 18" stroke-width="7"/>
+  <path d="M75 17h7M78.5 10v-6M84 23l6 6M67 10l-4-5" stroke="#E8873D" stroke-width="3.5"/>
+</g>
+
+</svg>

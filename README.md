@@ -7,6 +7,9 @@ ListingPersister) vers `listings`/`price_observations`. Aucun matching
 produit, calcul de valeur de marché ou moteur d'opportunité — voir
 `docs/TRV-001-C.md` et `docs/TRV-002.md`.
 
+Habillage graphique V1 (AV-UI-001) intégré : palette/typographie/composants
+de `docs/brand-v1/` chargés dans `public/index.php` (voir `docs/AV-UI-001.md`).
+
 ## Structure
 
 ```
@@ -22,13 +25,17 @@ app/
 config/           database.php, ebay.php (charge .env)
 database/
 └── migrations/   fichiers .sql horodatés, suivis via schema_migrations
-public/           docroot (index.php)
+public/
+├── index.php     page unique, habillée charte V1
+├── css/          trouvailles.css (pack de charte, intact), app.css (glue de mise en page)
+└── assets/       logo/, icons/, illustrations/, patterns/, ui/ (SVG, pack de charte)
 tools/            migrate.php (lanceur de migrations)
 tests/            TestRunner.php, assertions.php, run.php (schéma),
                    run_leboncoin_adapter.php, run_vinted_adapter.php,
                    run_ebay_adapter.php, run_listing_persister.php,
                    Support/FixtureHttpClient.php, fixtures/*.json
-docs/             TRV-001-C.md, TRV-002.md (rapports de mission)
+docs/             TRV-001-C.md, TRV-002.md, AV-UI-001.md (rapports de mission),
+                   brand-v1/ (README + usage.md du pack de charte fourni)
 ```
 
 ## Migrations
