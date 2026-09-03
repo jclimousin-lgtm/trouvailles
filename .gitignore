@@ -1,0 +1,5 @@
+.env
+public/app-root.php
+backups/*.sql
+storage/*
+!storage/.gitkeep
