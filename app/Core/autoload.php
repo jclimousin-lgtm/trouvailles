@@ -11,6 +11,9 @@ spl_autoload_register(function (string $class): void {
         'Trouvailles\\Controllers\\' => __DIR__ . '/../Controllers/',
         'Trouvailles\\Models\\' => __DIR__ . '/../Models/',
         'Trouvailles\\Services\\' => __DIR__ . '/../Services/',
+        'Trouvailles\\Http\\' => __DIR__ . '/../Http/',
+        'Trouvailles\\Sources\\' => __DIR__ . '/../Sources/',
+        'Trouvailles\\Persistence\\' => __DIR__ . '/../Persistence/',
     ];
 
     foreach ($map as $prefix => $dir) {

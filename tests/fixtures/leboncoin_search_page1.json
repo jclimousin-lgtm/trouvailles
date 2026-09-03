@@ -1,0 +1,44 @@
+{
+  "total": 3,
+  "ads": [
+    {
+      "list_id": 2891234567,
+      "url": "https://www.leboncoin.fr/velos/2891234567.htm",
+      "subject": "VTT Decathlon Rockrider 540",
+      "body": "Très bon état, peu servi, freins à disque.",
+      "price_cents": 25000,
+      "brand": "Decathlon",
+      "category_id": "18",
+      "category_name": "Vélos",
+      "status": "used_good",
+      "first_publication_date": "2026-08-20 10:15:00",
+      "location": {
+        "city": "Lyon",
+        "zipcode": "69003",
+        "region_name": "Auvergne-Rhône-Alpes"
+      },
+      "owner": {
+        "user_id": "u123",
+        "type": "private"
+      }
+    },
+    {
+      "list_id": 2891234568,
+      "url": "https://www.leboncoin.fr/velos/2891234568.htm",
+      "subject": "Vélo électrique",
+      "body": null,
+      "price_cents": 80000,
+      "category_id": "18",
+      "status": "used_very_good",
+      "first_publication_date": "2026-08-21 09:00:00",
+      "location": {
+        "city": "Villeurbanne",
+        "zipcode": "69100"
+      },
+      "owner": {
+        "user_id": "u456",
+        "type": "pro"
+      }
+    }
+  ]
+}

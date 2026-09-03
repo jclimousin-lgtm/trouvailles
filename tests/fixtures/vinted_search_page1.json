@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "id": 4123456789,
+      "title": "Robe fleurie été",
+      "url": "/items/4123456789-robe-fleurie-ete",
+      "brand_title": "Zara",
+      "catalog_id": 1904,
+      "status": "very_good",
+      "price": { "amount": "15.00", "currency_code": "EUR" },
+      "created_at": "2026-08-18 08:00:00",
+      "user": { "login": "marie", "city": "Bordeaux", "business": false }
+    },
+    {
+      "id": 4123456790,
+      "title": "Baskets running",
+      "url": "/items/4123456790-baskets-running",
+      "price": { "amount": "40.00", "currency_code": "EUR" },
+      "user": { "login": "sport-shop", "business": true }
+    }
+  ]
+}

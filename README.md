@@ -1,26 +1,34 @@
 # Trouvailles
 
-Squelette applicatif + schéma SQL du modèle de données (TRV-001-C) :
-connexion PDO/MariaDB, migrations versionnées, persistance des entités
-source/listing/product/price_observation/market_valuation/opportunity.
-Aucune logique métier (scraping, matching, valorisation, notifications) —
-voir `docs/TRV-001-C.md` pour le détail du périmètre.
+Schéma SQL du modèle de données (TRV-001-C) + adapters marketplace
+(TRV-002) : Leboncoin, Vinted, eBay (Browse API officielle) alimentent le
+même pipeline commun (SourceManager → Adapter → NormalizedListing →
+ListingPersister) vers `listings`/`price_observations`. Aucun matching
+produit, calcul de valeur de marché ou moteur d'opportunité — voir
+`docs/TRV-001-C.md` et `docs/TRV-002.md`.
 
 ## Structure
 
 ```
 app/
 ├── Core/         Database.php (PDO singleton), Env.php (.env), autoload.php
+├── Http/         HttpClientInterface, CurlHttpClient (aucun contournement anti-bot)
+├── Sources/      NormalizedListing, MarketplaceAdapterInterface, SourceManager,
+│                 Leboncoin/, Vinted/, Ebay/ (Client + Adapter par marketplace)
+├── Persistence/  ListingPersister (listings + price_observations)
 ├── Models/       (vide — réservé)
 ├── Services/     (vide — réservé)
 └── Controllers/  (vide — réservé)
-config/           config/database.php (charge .env)
+config/           database.php, ebay.php (charge .env)
 database/
 └── migrations/   fichiers .sql horodatés, suivis via schema_migrations
 public/           docroot (index.php)
 tools/            migrate.php (lanceur de migrations)
-tests/            TestRunner.php, assertions.php, run.php
-docs/             TRV-001-C.md (rapport de mission)
+tests/            TestRunner.php, assertions.php, run.php (schéma),
+                   run_leboncoin_adapter.php, run_vinted_adapter.php,
+                   run_ebay_adapter.php, run_listing_persister.php,
+                   Support/FixtureHttpClient.php, fixtures/*.json
+docs/             TRV-001-C.md, TRV-002.md (rapports de mission)
 ```
 
 ## Migrations

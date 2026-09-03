@@ -1,0 +1,24 @@
+{
+  "total": 2,
+  "itemSummaries": [
+    {
+      "itemId": "v1|123456789012|0",
+      "itemWebUrl": "https://www.ebay.com/itm/123456789012",
+      "title": "Canon EOS 90D DSLR Camera Body",
+      "shortDescription": "Used, excellent condition, low shutter count.",
+      "price": { "value": "650.00", "currency": "USD" },
+      "condition": "Used",
+      "categories": [{ "categoryId": "31388", "categoryName": "Digital Cameras" }],
+      "itemLocation": { "city": "Austin", "country": "US" },
+      "shippingOptions": [{ "shippingCost": { "value": "12.50", "currency": "USD" } }],
+      "buyingOptions": ["FIXED_PRICE"]
+    },
+    {
+      "itemId": "v1|987654321098|0",
+      "itemWebUrl": "https://www.ebay.com/itm/987654321098",
+      "title": "Vintage Rolex Submariner (parts only)",
+      "price": { "value": "3200.00", "currency": "USD" },
+      "buyingOptions": ["AUCTION"]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "total": 3,
+  "ads": [
+    {
+      "list_id": 2891234569,
+      "url": "https://www.leboncoin.fr/velos/2891234569.htm",
+      "subject": "Vélo enfant 20 pouces",
+      "body": "Comme neuf.",
+      "price_cents": 6000,
+      "category_id": "18",
+      "status": "used_like_new",
+      "first_publication_date": "2026-08-22 14:30:00",
+      "location": {
+        "city": "Caluire-et-Cuire"
+      },
+      "owner": {
+        "user_id": "u789",
+        "type": "private"
+      }
+    }
+  ]
+}
