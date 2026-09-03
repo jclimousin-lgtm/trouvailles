@@ -1,7 +1,10 @@
 # Trouvailles
 
-Squelette initial : structure applicative minimale, connexion PDO/MariaDB.
-Aucune logique métier — la vocation fonctionnelle reste à préciser.
+Squelette applicatif + schéma SQL du modèle de données (TRV-001-C) :
+connexion PDO/MariaDB, migrations versionnées, persistance des entités
+source/listing/product/price_observation/market_valuation/opportunity.
+Aucune logique métier (scraping, matching, valorisation, notifications) —
+voir `docs/TRV-001-C.md` pour le détail du périmètre.
 
 ## Structure
 
@@ -12,9 +15,20 @@ app/
 ├── Services/     (vide — réservé)
 └── Controllers/  (vide — réservé)
 config/           config/database.php (charge .env)
+database/
+└── migrations/   fichiers .sql horodatés, suivis via schema_migrations
 public/           docroot (index.php)
-scripts/sql/      (vide — réservé aux futures migrations)
-docs/             (vide — réservé)
+tools/            migrate.php (lanceur de migrations)
+tests/            TestRunner.php, assertions.php, run.php
+docs/             TRV-001-C.md (rapport de mission)
+```
+
+## Migrations
+
+```
+php tools/migrate.php             # applique les migrations en attente
+php tools/migrate.php --bootstrap # enregistre l'existant sans l'exécuter
+php tests/run.php                 # applique les migrations + suite de tests
 ```
 
 ## Démarrage local
