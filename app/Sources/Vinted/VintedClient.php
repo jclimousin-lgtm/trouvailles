@@ -27,8 +27,13 @@ use Trouvailles\Http\HttpClientInterface;
  * Si la protection anti-bot de Vinted bloque malgré tout ce client
  * standard, l'échec est remonté tel quel (voir VintedAdapter et le rapport
  * de vérification réelle), jamais contourné.
+ *
+ * TRV-002-B : implémente VintedTransportInterface — comportement HTTP
+ * historique inchangé, conservé comme implémentation par défaut/compatible
+ * avec l'existant. Voir VintedBrowserSessionTransport pour l'alternative
+ * consommant une session déjà fournie.
  */
-final class VintedClient
+final class VintedClient implements VintedTransportInterface
 {
     private const SEARCH_PATH = '/api/v2/catalog/items';
 

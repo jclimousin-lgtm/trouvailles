@@ -14,6 +14,14 @@ de `docs/brand-v1/` chargés dans `public/index.php` (voir `docs/AV-UI-001.md`).
 `OpportunityRepository`, données réelles ou état vide honnête — jamais de
 donnée fabriquée (voir `docs/TRV-UI-002.md`).
 
+Vinted (TRV-002-A/B) : `VintedAdapter` dépend désormais de
+`VintedTransportInterface` (jamais de `VintedClient` directement) —
+`VintedClient` (HTTP direct, historique) et `VintedBrowserSessionTransport`
+(consomme une session déjà fournie, ne fabrique jamais de session,
+aucun contournement anti-bot) en sont les deux implémentations. Voir
+`docs/TRV-002-A-audit-vinted-browser-session.md` et
+`docs/TRV-002-B-vinted-browser-session.md`.
+
 ## Structure
 
 ```
@@ -21,7 +29,8 @@ app/
 ├── Core/         Database.php (PDO singleton), Env.php (.env), autoload.php
 ├── Http/         HttpClientInterface, CurlHttpClient (aucun contournement anti-bot)
 ├── Sources/      NormalizedListing, MarketplaceAdapterInterface, SourceManager,
-│                 Leboncoin/, Vinted/, Ebay/ (Client + Adapter par marketplace)
+│                 Leboncoin/, Ebay/ (Client + Adapter), Vinted/ (Client +
+│                 BrowserSessionTransport + TransportInterface + Adapter)
 ├── Persistence/  ListingPersister (écriture), OpportunityRepository (lecture accueil)
 ├── Models/       (vide — réservé)
 ├── Services/     (vide — réservé)
@@ -36,10 +45,11 @@ public/
 tools/            migrate.php (lanceur de migrations)
 tests/            TestRunner.php, assertions.php, run.php (schéma),
                    run_leboncoin_adapter.php, run_vinted_adapter.php,
-                   run_ebay_adapter.php, run_listing_persister.php,
+                   run_vinted_transport.php, run_ebay_adapter.php,
+                   run_listing_persister.php, run_opportunity_repository.php,
                    Support/FixtureHttpClient.php, fixtures/*.json
-docs/             TRV-001-C.md, TRV-002.md, AV-UI-001.md, TRV-UI-002.md
-                   (rapports de mission), brand-v1/ (pack de charte fourni)
+docs/             TRV-001-C.md, TRV-002.md, AV-UI-001.md, TRV-UI-002.md,
+                   TRV-002-A/B-*.md (rapports de mission), brand-v1/ (charte)
 ```
 
 ## Migrations

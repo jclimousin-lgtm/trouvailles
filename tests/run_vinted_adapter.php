@@ -20,6 +20,7 @@ use Trouvailles\Core\Database;
 use Trouvailles\Persistence\ListingPersister;
 use Trouvailles\Sources\NormalizedListing;
 use Trouvailles\Sources\Vinted\VintedAdapter;
+use Trouvailles\Sources\Vinted\VintedClient;
 
 $runner = new TestRunner();
 
@@ -39,7 +40,7 @@ $runner->run('Vinted : établissement de session (cookie) puis recherche + parsi
     $searchUrl = vintedSearchUrl(['search_text' => 'robe', 'order' => 'newest_first', 'page' => 1, 'per_page' => 20]);
     $http->respondTo($searchUrl, 200, $page1Fixture);
 
-    $adapter = new VintedAdapter($http);
+    $adapter = new VintedAdapter(new VintedClient($http));
     $listings = $adapter->search(['search_text' => 'robe']);
 
     assertEquals(2, count($listings), 'Deux articles attendus');
@@ -68,7 +69,7 @@ $runner->run('Vinted : champs non confirmés absents -> null, jamais inventés (
     $searchUrl = vintedSearchUrl(['search_text' => 'robe', 'order' => 'newest_first', 'page' => 1, 'per_page' => 20]);
     $http->respondTo($searchUrl, 200, $page1Fixture);
 
-    $adapter = new VintedAdapter($http);
+    $adapter = new VintedAdapter(new VintedClient($http));
     $listings = $adapter->search(['search_text' => 'robe']);
 
     $second = $listings[1];
@@ -89,7 +90,7 @@ $runner->run('Vinted : article sans id/url ignoré sans faire échouer les autre
         ],
     ]));
 
-    $adapter = new VintedAdapter($http);
+    $adapter = new VintedAdapter(new VintedClient($http));
     $listings = $adapter->search([]);
 
     assertEquals(1, count($listings), 'Seul l\'article avec id+url doit être conservé');
@@ -99,7 +100,7 @@ $runner->run('Vinted : article sans id/url ignoré sans faire échouer les autre
 $runner->run('Vinted : absence de cookie de session levée explicitement', function () use ($homeUrl) {
     $http = new FixtureHttpClient();
     $http->respondTo($homeUrl, 200, '<html></html>'); // aucun set-cookie
-    $adapter = new VintedAdapter($http);
+    $adapter = new VintedAdapter(new VintedClient($http));
 
     assertThrows(function () use ($adapter) {
         $adapter->search(['search_text' => 'robe']);
@@ -111,11 +112,34 @@ $runner->run('Vinted : réponse 403 (anti-bot) remontée explicitement, jamais c
     $http->respondTo($homeUrl, 200, '<html></html>', ['set-cookie' => ['access_token_web=abc123']]);
     $searchUrl = vintedSearchUrl(['order' => 'newest_first', 'page' => 1, 'per_page' => 20]);
     $http->respondTo($searchUrl, 403, '');
-    $adapter = new VintedAdapter($http);
+    $adapter = new VintedAdapter(new VintedClient($http));
 
     assertThrows(function () use ($adapter) {
         $adapter->search([]);
     }, 'Un 403 doit lever une exception, jamais être contourné');
+});
+
+$runner->run('Vinted : URL relative utilise le domaine configuré, jamais vinted.fr en dur (correction TRV-002-B, Test G)', function () {
+    $domain = 'vinted.de';
+    $http = new FixtureHttpClient();
+    $http->respondTo("https://www.{$domain}/", 200, '<html></html>', ['set-cookie' => ['access_token_web=abc123']]);
+    $searchUrl = "https://www.{$domain}/api/v2/catalog/items?" . http_build_query(['order' => 'newest_first', 'page' => 1, 'per_page' => 20]);
+    $http->respondTo($searchUrl, 200, json_encode([
+        'items' => [
+            ['id' => 999, 'url' => '/items/999-test', 'title' => 'Article domaine'],
+        ],
+    ]));
+
+    $client = new VintedClient($http, $domain);
+    $adapter = new VintedAdapter($client, $domain);
+    $listings = $adapter->search([]);
+
+    assertEquals(1, count($listings), 'Un article attendu');
+    assertEquals(
+        'https://www.vinted.de/items/999-test',
+        $listings[0]->url,
+        'Une URL relative doit être préfixée du domaine configuré (vinted.de), plus jamais vinted.fr en dur'
+    );
 });
 
 // ---------------------------------------------------------------------
@@ -132,7 +156,7 @@ try {
         $searchUrl = vintedSearchUrl(['order' => 'newest_first', 'page' => 1, 'per_page' => 20]);
         $http->respondTo($searchUrl, 200, $page1Fixture);
 
-        $adapter = new VintedAdapter($http);
+        $adapter = new VintedAdapter(new VintedClient($http));
         $listings = $adapter->search([]);
 
         $persister = new ListingPersister($pdo);

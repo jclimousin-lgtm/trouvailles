@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Trouvailles\Sources\Vinted;
 
-use Trouvailles\Http\HttpClientInterface;
 use Trouvailles\Sources\MarketplaceAdapterInterface;
 use Trouvailles\Sources\NormalizedListing;
 
 /**
- * TRV-002 §12 — adapter Vinted : convertit les réponses de VintedClient
- * vers NormalizedListing. Mapping confirmé par l'inspection de
- * `herissondev/vinted-api-wrapper` et `vlymar1/vinted-api-kit` (`item.py`,
- * identique dans les deux, MIT) :
+ * TRV-002 §12 — adapter Vinted : convertit les réponses d'un
+ * VintedTransportInterface vers NormalizedListing. Mapping confirmé par
+ * l'inspection de `herissondev/vinted-api-wrapper` et
+ * `vlymar1/vinted-api-kit` (`item.py`, identique dans les deux, MIT) :
  *
  *   id → externalId, title → title, url → url,
  *   price.amount/price.currency_code → askingPrice/askingCurrency,
@@ -28,16 +27,24 @@ use Trouvailles\Sources\NormalizedListing;
  * appel `/items/{id}/details` — non déclenché ici (un appel par résultat
  * de recherche aurait multiplié le volume de requêtes ; hors périmètre de
  * cette mission), donc laissé `null` depuis la recherche seule.
+ *
+ * TRV-002-B : dépend de VintedTransportInterface (jamais de VintedClient
+ * directement) — la sélection du transport (HTTP direct vs session fournie)
+ * se fait au moment de la construction, à l'extérieur de cet adapter (voir
+ * docs/TRV-002-B-vinted-browser-session.md). `$domain` reste un paramètre
+ * propre à l'adapter (indépendant du domaine éventuellement utilisé par le
+ * transport) : il sert uniquement à préfixer une URL relative dans
+ * mapItem() — correction TRV-002-B d'un domaine `vinted.fr` auparavant en
+ * dur, indépendant de tout paramètre.
  */
 final class VintedAdapter implements MarketplaceAdapterInterface
 {
     private const DEFAULT_PER_PAGE = 20;
 
-    private readonly VintedClient $client;
-
-    public function __construct(?HttpClientInterface $http = null, string $domain = 'vinted.fr')
-    {
-        $this->client = new VintedClient($http, $domain);
+    public function __construct(
+        private readonly VintedTransportInterface $transport,
+        private readonly string $domain = 'vinted.fr'
+    ) {
     }
 
     /**
@@ -54,7 +61,7 @@ final class VintedAdapter implements MarketplaceAdapterInterface
 
         for ($page = 1; $page <= $maxPages; $page++) {
             try {
-                $raw = $this->client->searchPage($criteria, $page, $perPage);
+                $raw = $this->transport->searchPage($criteria, $page, $perPage);
             } catch (\Throwable $e) {
                 if ($page === 1) {
                     throw $e;
@@ -98,7 +105,7 @@ final class VintedAdapter implements MarketplaceAdapterInterface
             return null;
         }
 
-        $url = str_starts_with($rawUrl, 'http') ? $rawUrl : ('https://www.vinted.fr' . $rawUrl);
+        $url = str_starts_with($rawUrl, 'http') ? $rawUrl : ('https://www.' . $this->domain . $rawUrl);
 
         $price = $item['price'] ?? null;
         $askingPrice = is_array($price) && isset($price['amount']) && is_numeric($price['amount'])
