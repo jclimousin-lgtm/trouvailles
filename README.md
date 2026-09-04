@@ -22,6 +22,13 @@ aucun contournement anti-bot) en sont les deux implémentations. Voir
 `docs/TRV-002-A-audit-vinted-browser-session.md` et
 `docs/TRV-002-B-vinted-browser-session.md`.
 
+POC collecteur local Leboncoin (TRV-003-A) : extension Chrome MV3 isolée
+dans `tools/lbc-local-collector/`, aucun raccordement au backend PHP —
+détecte une recherche LBC ouverte normalement, exporte les annonces
+visibles en `NormalizedListing` JSON local. Validation en conditions
+réelles en attente (pas d'accès navigateur pendant cette mission) — voir
+`docs/TRV-003-A-poc-lbc-collector.md`.
+
 ## Structure
 
 ```
