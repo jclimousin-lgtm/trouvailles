@@ -78,9 +78,7 @@ final class OpportunityDetector
 
             $askingPrice = (float) $row['asking_price'];
             $marketValue = (float) $row['value_central'];
-            $discountPercentage = $marketValue > 0.0
-                ? round((($marketValue - $askingPrice) / $marketValue) * 100, 2)
-                : 0.0;
+            $discountPercentage = self::calculateDiscount($askingPrice, $marketValue);
 
             if ($discountPercentage < $minDiscount) {
                 $counts['skipped']++;
@@ -100,6 +98,83 @@ final class OpportunityDetector
         }
 
         return $counts;
+    }
+
+    /**
+     * TRV-008 — lecture seule : décote actuelle (dernière valorisation
+     * `valid` uniquement) pour un ensemble de listing_id donné, sans
+     * jamais écrire dans `opportunities`. Utilisé par public/chasses.php
+     * pour annoter les résultats d'UNE recherche précise sans dépendre de
+     * l'historique d'exécutions précédentes de detect() — un seuil
+     * différent utilisé hier (min_discount déjà enregistré sur une ligne
+     * existante) ne doit jamais fausser l'affichage d'une recherche
+     * d'aujourd'hui avec un seuil différent : ici, aucun seuil n'est
+     * appliqué, seule la décote réelle est renvoyée, à l'appelant de
+     * comparer à son propre seuil courant.
+     *
+     * Mêmes règles d'éligibilité que detect() (devise cohérente,
+     * valorisation `valid` uniquement) — jamais de filtre `l.status`
+     * global ici, seuls les listing_id demandés sont considérés.
+     *
+     * @param list<int> $listingIds
+     * @return array<int, array{market_value:float, discount_percentage:float, confidence_score:?float}>
+     *   indexé par listing_id — un listing absent du résultat n'a
+     *   simplement aucune valorisation `valid` exploitable (jamais 0
+     *   fabriqué).
+     */
+    public function previewForListings(array $listingIds): array
+    {
+        if ($listingIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($listingIds), '?'));
+        $stmt = $this->pdo->prepare(
+            "SELECT
+                l.id AS listing_id,
+                l.asking_price,
+                l.asking_currency,
+                lp.product_id,
+                mv.value_central,
+                mv.currency AS valuation_currency,
+                mv.confidence_score
+             FROM listings l
+             JOIN listing_products lp ON lp.listing_id = l.id
+             JOIN market_valuations mv ON mv.id = (
+                 SELECT mv2.id FROM market_valuations mv2
+                 WHERE mv2.product_id = lp.product_id
+                 ORDER BY mv2.created_at DESC
+                 LIMIT 1
+             )
+             WHERE l.id IN ({$placeholders})
+               AND l.asking_price IS NOT NULL
+               AND l.asking_currency IS NOT NULL
+               AND mv.valuation_status = 'valid'"
+        );
+        $stmt->execute($listingIds);
+
+        $result = [];
+        foreach ($stmt as $row) {
+            if ($row['asking_currency'] !== $row['valuation_currency']) {
+                continue; // devise différente : jamais de conversion inventée, ignoré
+            }
+
+            $marketValue = (float) $row['value_central'];
+            $result[(int) $row['listing_id']] = [
+                'market_value' => $marketValue,
+                'discount_percentage' => self::calculateDiscount((float) $row['asking_price'], $marketValue),
+                'confidence_score' => $row['confidence_score'] !== null ? (float) $row['confidence_score'] : null,
+            ];
+        }
+
+        return $result;
+    }
+
+    private static function calculateDiscount(float $askingPrice, float $marketValue): float
+    {
+        return $marketValue > 0.0
+            ? round((($marketValue - $askingPrice) / $marketValue) * 100, 2)
+            : 0.0;
     }
 
     private function alreadyDetected(int $listingId, int $valuationId): bool

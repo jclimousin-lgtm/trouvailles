@@ -104,6 +104,30 @@ $runner->run('eBay : item sans itemId/itemWebUrl ignoré sans faire échouer les
     assertEquals('Valide', $listings[0]->title, 'Le titre de l\'item valide doit être conservé');
 });
 
+$runner->run('eBay : itemCreationDate (ISO 8601) converti au format DATETIME MySQL', function () use ($config, $tokenUrl, $tokenResponse) {
+    $http = new FixtureHttpClient();
+    $http->respondTo($tokenUrl, 200, $tokenResponse);
+    $searchUrl = ebaySearchUrl(['q' => 'x', 'limit' => 50, 'offset' => 0]);
+    $http->respondTo($searchUrl, 200, json_encode([
+        'itemSummaries' => [
+            [
+                'itemId' => 'v1|2|0', 'itemWebUrl' => 'https://www.ebay.com/itm/2', 'title' => 'Avec date',
+                'itemCreationDate' => '2026-09-05T15:53:03.000Z',
+            ],
+            [
+                'itemId' => 'v1|3|0', 'itemWebUrl' => 'https://www.ebay.com/itm/3', 'title' => 'Date illisible',
+                'itemCreationDate' => 'pas-une-date',
+            ],
+        ],
+    ]));
+
+    $adapter = new EbayAdapter($config, $http);
+    $listings = $adapter->search(['q' => 'x']);
+
+    assertEquals('2026-09-05 15:53:03', $listings[0]->publishedAt, 'ISO 8601 doit être converti au format MySQL "Y-m-d H:i:s", jamais stocké tel quel (bug constaté en conditions réelles : rejeté par un mode SQL strict)');
+    assertEquals(null, $listings[1]->publishedAt, 'une date illisible doit rester null, jamais une date inventée');
+});
+
 $runner->run('eBay : échec OAuth (401) remonté explicitement', function () use ($config, $tokenUrl) {
     $http = new FixtureHttpClient();
     $http->respondTo($tokenUrl, 401, '{"error":"invalid_client"}');

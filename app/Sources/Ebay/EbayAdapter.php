@@ -142,8 +142,27 @@ final class EbayAdapter implements MarketplaceAdapterInterface
             shippingPrice: $shippingPrice,
             location: $location,
             sellerType: null, // non distingué (particulier/pro) par item_summary — jamais inventé
-            publishedAt: isset($item['itemCreationDate']) ? (string) $item['itemCreationDate'] : null,
+            publishedAt: isset($item['itemCreationDate']) ? self::normalizePublishedAt((string) $item['itemCreationDate']) : null,
             priceMechanism: $priceMechanism,
         );
+    }
+
+    /**
+     * TRV-008 — eBay renvoie itemCreationDate au format ISO 8601
+     * (ex. "2026-09-05T15:53:03.000Z"), incompatible avec la colonne
+     * DATETIME MySQL de listings.published_at (constaté en conditions
+     * réelles : rejeté par un mode SQL strict local, silencieusement
+     * altéré en production sans mode strict — bug pré-existant, jamais
+     * corrigé avant TRV-008 faute d'avoir persisté de vraies données
+     * eBay production auparavant). Conversion explicite ; une date
+     * illisible reste `null`, jamais une date inventée.
+     */
+    private static function normalizePublishedAt(string $iso): ?string
+    {
+        try {
+            return (new \DateTimeImmutable($iso))->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }

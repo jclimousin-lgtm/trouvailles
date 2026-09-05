@@ -182,6 +182,66 @@ try {
 
         assertEquals([], fetchOpportunities($pdo, $listingId), 'un listing sans produit matché ne doit jamais produire d\'opportunité');
     });
+
+    $runner->run('previewForListings() : décote réelle renvoyée, jamais de ligne opportunities créée', function () use ($pdo, $sourceId) {
+        $productId = makeOppProduct($pdo, 'Produit preview valid');
+        $listingId = makeOppListing($pdo, $sourceId, 'EXT-OPPD-PREVIEW-1', 80.0, 'USD');
+        linkOppListingProduct($pdo, $listingId, $productId);
+        makeOppValuation($pdo, $productId, 100.0, 'USD', 'valid', 0.9);
+
+        $countBefore = (int) $pdo->query('SELECT COUNT(*) AS n FROM opportunities')->fetch()['n'];
+
+        $detector = new OpportunityDetector($pdo);
+        $preview = $detector->previewForListings([$listingId]);
+
+        $countAfter = (int) $pdo->query('SELECT COUNT(*) AS n FROM opportunities')->fetch()['n'];
+        assertEquals($countBefore, $countAfter, 'previewForListings() ne doit jamais écrire dans opportunities');
+
+        assertTrue(isset($preview[$listingId]), 'le listing valid doit apparaître dans le résultat');
+        assertEquals(100.0, $preview[$listingId]['market_value'], 'market_value doit venir de value_central');
+        assertEquals(20.0, $preview[$listingId]['discount_percentage'], 'décote de (100-80)/100=20%');
+        assertEquals(0.9, $preview[$listingId]['confidence_score'], 'confidence_score doit être repris tel quel');
+    });
+
+    $runner->run('previewForListings() : absent si thin_evidence/insufficient_evidence', function () use ($pdo, $sourceId) {
+        $productId = makeOppProduct($pdo, 'Produit preview thin');
+        $listingId = makeOppListing($pdo, $sourceId, 'EXT-OPPD-PREVIEW-THIN', 80.0, 'USD');
+        linkOppListingProduct($pdo, $listingId, $productId);
+        makeOppValuation($pdo, $productId, 100.0, 'USD', 'thin_evidence');
+
+        $detector = new OpportunityDetector($pdo);
+        $preview = $detector->previewForListings([$listingId]);
+
+        assertEquals(false, isset($preview[$listingId]), 'un listing thin_evidence ne doit jamais apparaître dans la preview');
+    });
+
+    $runner->run('previewForListings() : absent si devise différente', function () use ($pdo, $sourceId) {
+        $productId = makeOppProduct($pdo, 'Produit preview devise');
+        $listingId = makeOppListing($pdo, $sourceId, 'EXT-OPPD-PREVIEW-CUR', 80.0, 'EUR');
+        linkOppListingProduct($pdo, $listingId, $productId);
+        makeOppValuation($pdo, $productId, 100.0, 'USD', 'valid');
+
+        $detector = new OpportunityDetector($pdo);
+        $preview = $detector->previewForListings([$listingId]);
+
+        assertEquals(false, isset($preview[$listingId]), 'devise différente -> jamais de conversion inventée, absent de la preview');
+    });
+
+    $runner->run('previewForListings() : plusieurs listing_id en un seul appel', function () use ($pdo, $sourceId) {
+        $productId = makeOppProduct($pdo, 'Produit preview multi');
+        $listingA = makeOppListing($pdo, $sourceId, 'EXT-OPPD-PREVIEW-MULTI-A', 80.0, 'USD');
+        $listingB = makeOppListing($pdo, $sourceId, 'EXT-OPPD-PREVIEW-MULTI-B', 90.0, 'USD');
+        linkOppListingProduct($pdo, $listingA, $productId);
+        linkOppListingProduct($pdo, $listingB, $productId);
+        makeOppValuation($pdo, $productId, 100.0, 'USD', 'valid');
+
+        $detector = new OpportunityDetector($pdo);
+        $preview = $detector->previewForListings([$listingA, $listingB]);
+
+        assertTrue(isset($preview[$listingA]) && isset($preview[$listingB]), 'les deux listings doivent apparaître');
+        assertEquals(20.0, $preview[$listingA]['discount_percentage'], 'listing A : (100-80)/100=20%');
+        assertEquals(10.0, $preview[$listingB]['discount_percentage'], 'listing B : (100-90)/100=10%');
+    });
 } finally {
     $pdo->rollBack();
 }

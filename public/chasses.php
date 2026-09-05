@@ -3,17 +3,23 @@
 declare(strict_types=1);
 
 /**
- * TRV-006 — page « Chasses » : formulaire de recherche multi-critères
- * (mot-clé + fourchette de prix) sur eBay, seule source active
- * aujourd'hui (Vinted/Leboncoin restent différés, bloqués anti-bot côté
- * serveur — voir docs/TRV-003-A-poc-lbc-collector.md et
- * docs/TRV-005-poc-vinted-collector.md).
+ * TRV-006/TRV-008 — page « Chasses » : formulaire de recherche
+ * multi-critères (mot-clé + fourchette de prix + marge minimale) sur
+ * eBay, seule source active aujourd'hui (Vinted/Leboncoin restent
+ * différés, bloqués anti-bot côté serveur — voir
+ * docs/TRV-003-A-poc-lbc-collector.md et docs/TRV-005-poc-vinted-collector.md).
  *
- * Résultats bruts, jamais présentés comme des « Trouvailles »/opportunités
- * (ce sont des annonces non évaluées — aucun moteur de valorisation
- * appliqué ici) : carte .tv-result dédiée, visuellement distincte de
- * .tv-opportunity. Aucune persistance, aucun déclenchement du moteur de
- * pricing depuis cette page (hors périmètre de cette mission).
+ * Deux modes :
+ *   - Sans marge : résultats bruts, jamais présentés comme des
+ *     « Trouvailles »/opportunités (annonces non évaluées) — carte
+ *     .tv-result, aucune écriture en base. Comportement TRV-006 inchangé.
+ *   - Avec marge (TRV-008) : persiste les résultats (ListingPersister),
+ *     les fait matcher/valoriser (ProductMatcher/ValuationEngine), puis
+ *     n'affiche QUE celles dont la décote réelle (valorisation `valid`
+ *     uniquement) atteint le seuil — cartes .tv-opportunity, vraies
+ *     bonnes affaires vetted. OpportunityDetector::detect() est aussi
+ *     appelé (même seuil) pour que ces opportunités remontent aussi sur
+ *     l'écran d'accueil, cohérence avec le reste du système.
  *
  * `q` est obligatoire : l'API Browse d'eBay renvoie une erreur 400 sans
  * au moins un de q/category_ids/charity_ids/epid/gtin (vérifié en
@@ -26,6 +32,11 @@ define('ROOT', $root);
 
 require ROOT . '/app/Core/autoload.php';
 
+use Trouvailles\Core\Database;
+use Trouvailles\Persistence\ListingPersister;
+use Trouvailles\Pricing\OpportunityDetector;
+use Trouvailles\Pricing\ProductMatcher;
+use Trouvailles\Pricing\ValuationEngine;
 use Trouvailles\Sources\Ebay\EbayAdapter;
 use Trouvailles\Sources\Ebay\EbayPriceFilter;
 
@@ -44,14 +55,33 @@ function lireFloatGet(string $cle): ?float
     return (float) $valeur;
 }
 
+/**
+ * Mêmes trois états de confiance que public/index.php (dupliqué
+ * localement, comme e() l'est déjà — aucune couche de vues partagée
+ * dans ce projet).
+ */
+function confianceAffichage(string $valuationStatus): array
+{
+    return match ($valuationStatus) {
+        'valid' => ['label' => 'Confiance élevée', 'class' => 'tv-badge--high'],
+        'thin_evidence' => ['label' => 'Confiance moyenne', 'class' => 'tv-badge--medium'],
+        default => ['label' => 'Données insuffisantes', 'class' => 'tv-badge--insufficient'],
+    };
+}
+
 $q = trim((string) ($_GET['q'] ?? ''));
 $prixMin = lireFloatGet('prix_min');
 $prixMax = lireFloatGet('prix_max');
+$margeMin = lireFloatGet('marge_min');
+if ($margeMin !== null && $margeMin < 0) {
+    $margeMin = null; // une marge négative n'a pas de sens, traitée comme absente
+}
 
 $aRecherche = isset($_GET['q']);
 $erreurValidation = null;
 $erreurChargement = false;
 $resultats = [];
+$opportunitesTrouvees = [];
 
 if ($aRecherche) {
     if ($q === '') {
@@ -71,6 +101,35 @@ if ($aRecherche) {
         } catch (\Throwable $exception) {
             $erreurChargement = true;
             error_log('[trouvailles][chasses] ' . $exception->getMessage());
+        }
+
+        if (!$erreurChargement && $margeMin !== null && $resultats !== []) {
+            try {
+                $pdo = Database::connection();
+                $persister = new ListingPersister($pdo);
+                $listingIdsParExternalId = [];
+                foreach ($resultats as $annonce) {
+                    $resultatPersistance = $persister->persist($annonce);
+                    $listingIdsParExternalId[$annonce->externalId] = $resultatPersistance['listing_id'];
+                }
+
+                (new ProductMatcher($pdo))->matchPendingObservations();
+                (new ValuationEngine($pdo))->valuateAllProducts();
+
+                $detector = new OpportunityDetector($pdo);
+                $detector->detect($margeMin); // enregistre aussi pour l'écran d'accueil « Mes Trouvailles »
+                $decotes = $detector->previewForListings(array_values($listingIdsParExternalId));
+
+                foreach ($resultats as $annonce) {
+                    $listingId = $listingIdsParExternalId[$annonce->externalId];
+                    if (isset($decotes[$listingId]) && $decotes[$listingId]['discount_percentage'] >= $margeMin) {
+                        $opportunitesTrouvees[] = ['annonce' => $annonce, 'decote' => $decotes[$listingId]];
+                    }
+                }
+            } catch (\Throwable $exception) {
+                $erreurChargement = true;
+                error_log('[trouvailles][chasses][marge] ' . $exception->getMessage());
+            }
         }
     }
 }
@@ -104,13 +163,17 @@ if ($aRecherche) {
         <label for="q">Mot-clé</label>
         <input class="tv-input" type="text" id="q" name="q" required value="<?= e($q) ?>" placeholder="Ex. Canon EOS 90D">
       </div>
-      <div class="tv-field tv-field--prix">
+      <div class="tv-field tv-field--narrow">
         <label for="prix_min">Prix min</label>
         <input class="tv-input" type="number" id="prix_min" name="prix_min" min="0" step="0.01" value="<?= e($_GET['prix_min'] ?? '') ?>">
       </div>
-      <div class="tv-field tv-field--prix">
+      <div class="tv-field tv-field--narrow">
         <label for="prix_max">Prix max</label>
         <input class="tv-input" type="number" id="prix_max" name="prix_max" min="0" step="0.01" value="<?= e($_GET['prix_max'] ?? '') ?>">
+      </div>
+      <div class="tv-field tv-field--narrow">
+        <label for="marge_min">Marge min. (%)</label>
+        <input class="tv-input" type="number" id="marge_min" name="marge_min" min="0" step="1" value="<?= e($_GET['marge_min'] ?? '') ?>">
       </div>
       <button class="tv-button" type="submit">Rechercher</button>
     </form>
@@ -133,6 +196,65 @@ if ($aRecherche) {
           <p class="tv-state__title">Aucun résultat pour cette recherche</p>
           <p>Essayez un autre mot-clé ou élargissez la fourchette de prix.</p>
         </div>
+
+      <?php elseif ($margeMin !== null): ?>
+
+        <p class="tv-hero__subtitle" style="margin-bottom:16px;">
+          <?= count($resultats) ?> annonce(s) analysée(s), <?= count($opportunitesTrouvees) ?> correspond(ent) à au moins <?= e((string) $margeMin) ?>&nbsp;% de décote.
+        </p>
+
+        <?php if ($opportunitesTrouvees === []): ?>
+
+          <div class="tv-card tv-state">
+            <p class="tv-state__title">Aucune opportunité à ce seuil</p>
+            <p>Aucune de ces annonces n'atteint cette marge avec une valorisation suffisamment fiable pour l'instant.</p>
+          </div>
+
+        <?php else: ?>
+
+          <div class="tv-grid tv-grid--opportunities">
+            <?php foreach ($opportunitesTrouvees as $item): ?>
+              <?php $annonce = $item['annonce']; $decote = $item['decote']; $confiance = confianceAffichage('valid'); ?>
+              <article class="tv-card tv-opportunity">
+                <img class="tv-opportunity__image" src="/assets/patterns/dots.svg" alt="">
+                <div class="tv-opportunity__body">
+                  <h3 class="tv-opportunity__title"><?= e($annonce->title ?? 'Produit') ?></h3>
+
+                  <div class="tv-opportunity__metrics">
+                    <div class="tv-opportunity__metric">
+                      <div class="tv-opportunity__label">Prix demandé</div>
+                      <div class="tv-price"><?= number_format($annonce->askingPrice, 0, ',', ' ') ?>&nbsp;€</div>
+                    </div>
+                    <div class="tv-opportunity__metric">
+                      <div class="tv-opportunity__label">Valeur estimée</div>
+                      <div class="tv-market-value">≈&nbsp;<?= number_format($decote['market_value'], 0, ',', ' ') ?>&nbsp;€</div>
+                    </div>
+                    <div class="tv-opportunity__metric">
+                      <div class="tv-opportunity__label">Décote</div>
+                      <div class="tv-discount">
+                        <img class="tv-icon" src="/assets/icons/tag-percent.svg" alt="">
+                        <?= round($decote['discount_percentage']) ?>&nbsp;%
+                      </div>
+                    </div>
+                  </div>
+
+                  <span class="tv-badge <?= $confiance['class'] ?>">
+                    <img class="tv-icon" src="/assets/icons/confidence.svg" alt="">
+                    <?= $confiance['label'] ?>
+                  </span>
+
+                  <p class="tv-opportunity__source">eBay</p>
+
+                  <a class="tv-button" href="<?= e($annonce->url) ?>" target="_blank" rel="noopener">
+                    Voir l'annonce
+                    <img class="tv-icon" src="/assets/icons/external.svg" alt="">
+                  </a>
+                </div>
+              </article>
+            <?php endforeach; ?>
+          </div>
+
+        <?php endif; ?>
 
       <?php else: ?>
 

@@ -46,6 +46,14 @@ Recherche multi-critères « Chasses » (TRV-006, eBay uniquement) :
 Browse) + fourchette de prix, résultats bruts jamais présentés comme des
 opportunités. Voir `docs/TRV-006-recherche-ebay.md`.
 
+Champ « marge minimale » sur Chasses (TRV-008) : renseigné, il déclenche
+persistance + matching + valorisation + détection, et n'affiche que les
+annonces de cette recherche dont la décote réelle atteint le seuil
+(`OpportunityDetector::previewForListings()`, lecture seule, jamais
+dépendante de l'historique d'exécutions à seuil différent). Corrige au
+passage un bug pré-existant de conversion de date eBay
+(`EbayAdapter::normalizePublishedAt()`). Voir `docs/TRV-008-marge-chasses.md`.
+
 Activation production eBay (TRV-007) : `public/ebay-account-deletion.php`
 implémente l'endpoint de conformité RGPD exigé par eBay avant d'activer
 l'OAuth en production — sans lui, l'authentification échoue
@@ -87,6 +95,7 @@ tests/            TestRunner.php, assertions.php, run.php (schéma),
                    run_pricing_pipeline_e2e.php, run_ebay_price_filter.php,
                    Support/FixtureHttpClient.php, fixtures/*.json
 docs/             TRV-001-C.md, TRV-002.md, TRV-004.md, TRV-006-recherche-ebay.md,
+                   TRV-007-ebay-production.md, TRV-008-marge-chasses.md,
                    AV-UI-001.md, TRV-UI-002.md, TRV-002-A/B-*.md, TRV-003-A-*.md,
                    TRV-005-*.md (rapports de mission), brand-v1/ (charte)
 ```
