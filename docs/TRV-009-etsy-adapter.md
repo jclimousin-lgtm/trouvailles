@@ -100,6 +100,17 @@ Suite complète (118 tests, 14 fichiers) rejouée — aucune régression.
   `api.etsy.com/v3/application` — à confirmer laquelle répond
   effectivement une fois un test réel possible.
 
+## Suivi de la demande d'app réelle (2026-09-05)
+
+App « trouvailler » créée sur `etsy.com/developers/register` (Personal App).
+Statut initial : **`Pending Personal Approval`** — clé non active tant que non
+approuvée par Etsy. D'après la discussion officielle
+`github.com/etsy/open-api/discussions/1607` (ouverte par le support Etsy le
+12 mai 2026), le délai d'approbation d'une Personal App est très variable
+(plusieurs semaines à plusieurs mois rapportés), avec des rejets parfois sans
+justification ni recours. À surveiller sur `etsy.com/developers/your-apps` ;
+aucun test réel possible tant que le statut n'est pas `Approved`.
+
 ## Étapes côté utilisateur pour la suite
 
 1. Créer un compte développeur sur `https://www.etsy.com/developers/register`.
