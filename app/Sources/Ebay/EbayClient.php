@@ -20,8 +20,10 @@ use Trouvailles\Http\HttpClientInterface;
  */
 final class EbayClient
 {
-    private const TOKEN_URL = 'https://api.ebay.com/identity/v1/oauth2/token';
-    private const SEARCH_URL = 'https://api.ebay.com/buy/browse/v1/item_summary/search';
+    private const TOKEN_URL_PRODUCTION = 'https://api.ebay.com/identity/v1/oauth2/token';
+    private const SEARCH_URL_PRODUCTION = 'https://api.ebay.com/buy/browse/v1/item_summary/search';
+    private const TOKEN_URL_SANDBOX = 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
+    private const SEARCH_URL_SANDBOX = 'https://api.sandbox.ebay.com/buy/browse/v1/item_summary/search';
     private const DEFAULT_SCOPE = 'https://api.ebay.com/oauth/api_scope';
 
     private readonly HttpClientInterface $http;
@@ -31,20 +33,32 @@ final class EbayClient
         private readonly string $clientId,
         private readonly string $clientSecret,
         private readonly string $marketplaceId = 'EBAY_US',
-        ?HttpClientInterface $http = null
+        ?HttpClientInterface $http = null,
+        private readonly bool $sandbox = false,
     ) {
         $this->http = $http ?? new CurlHttpClient();
     }
 
-    /** @param array<string,mixed> $config client_id, client_secret, marketplace_id? */
+    /** @param array<string,mixed> $config client_id, client_secret, marketplace_id?, sandbox? */
     public static function fromConfig(array $config, ?HttpClientInterface $http = null): self
     {
         return new self(
             (string) ($config['client_id'] ?? ''),
             (string) ($config['client_secret'] ?? ''),
             (string) ($config['marketplace_id'] ?? 'EBAY_US'),
-            $http
+            $http,
+            (bool) ($config['sandbox'] ?? false),
         );
+    }
+
+    private function tokenUrl(): string
+    {
+        return $this->sandbox ? self::TOKEN_URL_SANDBOX : self::TOKEN_URL_PRODUCTION;
+    }
+
+    private function searchUrl(): string
+    {
+        return $this->sandbox ? self::SEARCH_URL_SANDBOX : self::SEARCH_URL_PRODUCTION;
     }
 
     public function hasCredentials(): bool
@@ -67,7 +81,7 @@ final class EbayClient
 
         $response = $this->http->request(
             'POST',
-            self::TOKEN_URL,
+            $this->tokenUrl(),
             [
                 'Content-Type' => 'application/x-www-form-urlencoded',
                 'Authorization' => 'Basic ' . base64_encode($this->clientId . ':' . $this->clientSecret),
@@ -113,7 +127,7 @@ final class EbayClient
             'offset' => $offset,
         ], static fn ($v) => $v !== null);
 
-        $url = self::SEARCH_URL . '?' . http_build_query($query);
+        $url = $this->searchUrl() . '?' . http_build_query($query);
 
         $response = $this->http->request('GET', $url, [
             'Authorization' => "Bearer {$token}",

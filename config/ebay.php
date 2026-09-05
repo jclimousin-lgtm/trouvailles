@@ -10,4 +10,5 @@ return [
     'client_id' => Env::get('EBAY_CLIENT_ID', ''),
     'client_secret' => Env::get('EBAY_CLIENT_SECRET', ''),
     'marketplace_id' => Env::get('EBAY_MARKETPLACE_ID', 'EBAY_US'),
+    'sandbox' => Env::get('EBAY_SANDBOX', 'false') === 'true',
 ];

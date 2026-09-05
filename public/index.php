@@ -88,17 +88,7 @@ try {
 </head>
 <body>
 
-<header class="tv-container">
-  <nav class="tv-nav" aria-label="Navigation principale">
-    <img src="/assets/logo/trouvailles-horizontal.svg" alt="Trouvailles" height="40">
-    <div class="tv-nav__links">
-      <a class="tv-nav__link" href="/" aria-current="page">Accueil</a>
-      <a class="tv-nav__link" href="#">Chasses</a>
-      <a class="tv-nav__link" href="#">Trouvailles</a>
-      <a class="tv-nav__link" href="#">Réglages</a>
-    </div>
-  </nav>
-</header>
+<?php $pageActive = 'accueil'; $navSection = 'header'; require __DIR__ . '/_nav.php'; ?>
 
 <main class="tv-container">
 
@@ -182,12 +172,7 @@ try {
 
 </main>
 
-<nav class="tv-mobile-nav" aria-label="Navigation mobile">
-  <a href="/" aria-current="page">Accueil</a>
-  <a href="#">Chasses</a>
-  <a href="#">Trouvailles</a>
-  <a href="#">Réglages</a>
-</nav>
+<?php $navSection = 'mobile'; require __DIR__ . '/_nav.php'; ?>
 
 </body>
 </html>

@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Trouvailles — Collecteur local Vinted (POC)",
+  "version": "0.1.0",
+  "description": "POC : détecte une page de résultats Vinted ouverte normalement par l'utilisateur et exporte en local les annonces visibles au format NormalizedListing. Aucune requête réseau, aucun contournement de protection.",
+  "content_scripts": [
+    {
+      "matches": ["https://www.vinted.fr/catalog*"],
+      "js": ["lib/normalize.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
