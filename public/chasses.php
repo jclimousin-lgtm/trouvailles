@@ -82,6 +82,7 @@ $erreurValidation = null;
 $erreurChargement = false;
 $resultats = [];
 $opportunitesTrouvees = [];
+$resultatsAnnotes = [];
 
 if ($aRecherche) {
     if ($q === '') {
@@ -89,14 +90,15 @@ if ($aRecherche) {
     } elseif ($prixMin !== null && $prixMax !== null && $prixMin > $prixMax) {
         $erreurValidation = 'Le prix minimum doit être inférieur au prix maximum.';
     } else {
+        $config = require ROOT . '/config/ebay.php';
+
         $criteria = ['q' => $q, 'limit' => 20];
-        $filtre = EbayPriceFilter::build($prixMin, $prixMax);
+        $filtre = EbayPriceFilter::build($prixMin, $prixMax, $config['marketplace_id']);
         if ($filtre !== null) {
             $criteria['filter'] = $filtre;
         }
 
         try {
-            $config = require ROOT . '/config/ebay.php';
             $resultats = (new EbayAdapter($config))->search($criteria);
         } catch (\Throwable $exception) {
             $erreurChargement = true;
@@ -120,12 +122,29 @@ if ($aRecherche) {
                 $detector->detect($margeMin); // enregistre aussi pour l'écran d'accueil « Mes Trouvailles »
                 $decotes = $detector->previewForListings(array_values($listingIdsParExternalId));
 
+                // Comparateur : la valeur de marché est annotée sur TOUTES les
+                // annonces de la recherche (quand disponible), pas seulement
+                // celles qui dépassent le seuil — cahier des charges initial
+                // ("évaluer le prix réel des produits trouvés" avant de
+                // "sélectionner ceux avec une marge"). Le seuil sert à mettre
+                // en évidence les bonnes affaires, jamais à cacher le reste.
                 foreach ($resultats as $annonce) {
                     $listingId = $listingIdsParExternalId[$annonce->externalId];
-                    if (isset($decotes[$listingId]) && $decotes[$listingId]['discount_percentage'] >= $margeMin) {
-                        $opportunitesTrouvees[] = ['annonce' => $annonce, 'decote' => $decotes[$listingId]];
+                    $decote = $decotes[$listingId] ?? null;
+                    $resultatsAnnotes[] = [
+                        'annonce' => $annonce,
+                        'decote' => $decote,
+                        'qualifie' => $decote !== null && $decote['discount_percentage'] >= $margeMin,
+                    ];
+                    if ($decote !== null && $decote['discount_percentage'] >= $margeMin) {
+                        $opportunitesTrouvees[] = ['annonce' => $annonce, 'decote' => $decote];
                     }
                 }
+
+                // Les bonnes affaires en premier, puis le reste dans l'ordre
+                // d'arrivée d'eBay — jamais un tri qui invente un classement
+                // au-delà de ce distinguo qualifie/non-qualifie.
+                usort($resultatsAnnotes, static fn (array $a, array $b) => (int) $b['qualifie'] <=> (int) $a['qualifie']);
             } catch (\Throwable $exception) {
                 $erreurChargement = true;
                 error_log('[trouvailles][chasses][marge] ' . $exception->getMessage());
@@ -201,25 +220,20 @@ if ($aRecherche) {
 
         <p class="tv-hero__subtitle" style="margin-bottom:16px;">
           <?= count($resultats) ?> annonce(s) analysée(s), <?= count($opportunitesTrouvees) ?> correspond(ent) à au moins <?= e((string) $margeMin) ?>&nbsp;% de décote.
+          <?php if (count($opportunitesTrouvees) === 0): ?>
+            La valeur de marché estimée reste affichée ci-dessous quand elle est disponible, même sous le seuil.
+          <?php endif; ?>
         </p>
 
-        <?php if ($opportunitesTrouvees === []): ?>
+        <div class="tv-grid tv-grid--opportunities">
+          <?php foreach ($resultatsAnnotes as $item): ?>
+            <?php $annonce = $item['annonce']; $decote = $item['decote']; $qualifie = $item['qualifie']; ?>
+            <article class="tv-card tv-opportunity<?= $qualifie ? ' tv-opportunity--qualifie' : '' ?>">
+              <img class="tv-opportunity__image" src="/assets/patterns/dots.svg" alt="">
+              <div class="tv-opportunity__body">
+                <h3 class="tv-opportunity__title"><?= e($annonce->title ?? 'Produit') ?></h3>
 
-          <div class="tv-card tv-state">
-            <p class="tv-state__title">Aucune opportunité à ce seuil</p>
-            <p>Aucune de ces annonces n'atteint cette marge avec une valorisation suffisamment fiable pour l'instant.</p>
-          </div>
-
-        <?php else: ?>
-
-          <div class="tv-grid tv-grid--opportunities">
-            <?php foreach ($opportunitesTrouvees as $item): ?>
-              <?php $annonce = $item['annonce']; $decote = $item['decote']; $confiance = confianceAffichage('valid'); ?>
-              <article class="tv-card tv-opportunity">
-                <img class="tv-opportunity__image" src="/assets/patterns/dots.svg" alt="">
-                <div class="tv-opportunity__body">
-                  <h3 class="tv-opportunity__title"><?= e($annonce->title ?? 'Produit') ?></h3>
-
+                <?php if ($decote !== null): ?>
                   <div class="tv-opportunity__metrics">
                     <div class="tv-opportunity__metric">
                       <div class="tv-opportunity__label">Prix demandé</div>
@@ -238,23 +252,34 @@ if ($aRecherche) {
                     </div>
                   </div>
 
-                  <span class="tv-badge <?= $confiance['class'] ?>">
-                    <img class="tv-icon" src="/assets/icons/confidence.svg" alt="">
-                    <?= $confiance['label'] ?>
-                  </span>
+                  <?php if ($qualifie): ?>
+                    <span class="tv-badge tv-badge--high">
+                      <img class="tv-icon" src="/assets/icons/confidence.svg" alt="">
+                      Bonne affaire (≥&nbsp;<?= e((string) $margeMin) ?>&nbsp;%)
+                    </span>
+                  <?php endif; ?>
 
-                  <p class="tv-opportunity__source">eBay</p>
+                <?php else: ?>
 
-                  <a class="tv-button" href="<?= e($annonce->url) ?>" target="_blank" rel="noopener">
-                    Voir l'annonce
-                    <img class="tv-icon" src="/assets/icons/external.svg" alt="">
-                  </a>
-                </div>
-              </article>
-            <?php endforeach; ?>
-          </div>
+                  <?php if ($annonce->askingPrice !== null): ?>
+                    <div class="tv-result__price">
+                      <?= number_format($annonce->askingPrice, 2, ',', ' ') ?>&nbsp;<?= e($annonce->askingCurrency) ?>
+                    </div>
+                  <?php endif; ?>
+                  <p class="tv-result__meta">Valeur de marché : données insuffisantes pour l'instant.</p>
 
-        <?php endif; ?>
+                <?php endif; ?>
+
+                <p class="tv-opportunity__source">eBay</p>
+
+                <a class="tv-button<?= $qualifie ? '' : ' tv-button--secondary' ?>" href="<?= e($annonce->url) ?>" target="_blank" rel="noopener">
+                  Voir l'annonce
+                  <img class="tv-icon" src="/assets/icons/external.svg" alt="">
+                </a>
+              </div>
+            </article>
+          <?php endforeach; ?>
+        </div>
 
       <?php else: ?>
 

@@ -152,6 +152,14 @@
   color: var(--tv-muted);
 }
 
+/* TRV-008-bugfix — distingue visuellement une annonce qui atteint la
+   marge demandée, sans changer la structure de carte (même .tv-opportunity
+   que les autres, juste une bordure d'accent). */
+.tv-opportunity--qualifie {
+  border-color: var(--tv-green);
+  box-shadow: 0 8px 28px rgba(23, 107, 82, .18);
+}
+
 @media (max-width: 720px) {
   .tv-search-form { flex-direction: column; align-items: stretch; }
   .tv-field--narrow { max-width: none; }
