@@ -46,6 +46,13 @@ Recherche multi-critères « Chasses » (TRV-006, eBay uniquement) :
 Browse) + fourchette de prix, résultats bruts jamais présentés comme des
 opportunités. Voir `docs/TRV-006-recherche-ebay.md`.
 
+Activation production eBay (TRV-007) : `public/ebay-account-deletion.php`
+implémente l'endpoint de conformité RGPD exigé par eBay avant d'activer
+l'OAuth en production — sans lui, l'authentification échoue
+systématiquement, même avec des identifiants exacts. Production
+confirmée fonctionnelle (vraies annonces récupérées). Voir
+`docs/TRV-007-ebay-production.md`.
+
 ## Structure
 
 ```
