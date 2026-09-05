@@ -1,0 +1,23 @@
+{
+  "count": 2,
+  "results": [
+    {
+      "listing_id": 123456789,
+      "url": "https://www.etsy.com/listing/123456789",
+      "title": "Vintage Brass Compass — Nautical Decor",
+      "description": "A beautifully aged brass compass, fully functional.",
+      "price": { "amount": 4500, "divisor": 100, "currency_code": "USD" },
+      "created_timestamp": 1768478400,
+      "taxonomy_id": 1234
+    },
+    {
+      "listing_id": 987654321,
+      "url": "https://www.etsy.com/listing/987654321",
+      "title": "Boîte à bijoux en bois sculpté fait main",
+      "description": "Boîte artisanale en chêne massif, finition huilée.",
+      "price": { "amount": 3200, "divisor": 100, "currency_code": "EUR" },
+      "created_timestamp": 1768478400,
+      "taxonomy_id": 5678
+    }
+  ]
+}

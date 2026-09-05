@@ -61,6 +61,12 @@ systématiquement, même avec des identifiants exacts. Production
 confirmée fonctionnelle (vraies annonces récupérées). Voir
 `docs/TRV-007-ebay-production.md`.
 
+Intégration Etsy (TRV-009) : `app/Sources/Etsy/` — deuxième source
+active, après recherche de plateformes alternatives (Drouot, Catawiki,
+Delcampe, Depop — toutes écartées, pas d'API publique de recherche
+adaptée). Authentification par simple clé API, pas d'OAuth. Identifiants
+réels pas encore obtenus — voir `docs/TRV-009-etsy-adapter.md`.
+
 ## Structure
 
 ```
@@ -69,13 +75,14 @@ app/
 ├── Http/         HttpClientInterface, CurlHttpClient (aucun contournement anti-bot)
 ├── Sources/      NormalizedListing, MarketplaceAdapterInterface, SourceManager,
 │                 Leboncoin/, Ebay/ (Client + Adapter + PriceFilter, TRV-006),
-│                 Vinted/ (Client + BrowserSessionTransport + TransportInterface + Adapter)
+│                 Vinted/ (Client + BrowserSessionTransport + TransportInterface + Adapter),
+│                 Etsy/ (Client + Adapter, TRV-009 — clé API simple, pas d'OAuth)
 ├── Persistence/  ListingPersister (écriture), OpportunityRepository (lecture accueil)
 ├── Pricing/      TitleNormalizer, ProductMatcher, ValuationEngine, OpportunityDetector (TRV-004)
 ├── Models/       (vide — réservé)
 ├── Services/     (vide — réservé)
 └── Controllers/  (vide — réservé)
-config/           database.php, ebay.php (charge .env)
+config/           database.php, ebay.php, etsy.php (chargent .env)
 database/
 └── migrations/   fichiers .sql horodatés, suivis via schema_migrations
 public/
@@ -93,9 +100,11 @@ tests/            TestRunner.php, assertions.php, run.php (schéma),
                    run_title_normalizer.php, run_product_matcher.php,
                    run_valuation_engine.php, run_opportunity_detector.php,
                    run_pricing_pipeline_e2e.php, run_ebay_price_filter.php,
+                   run_etsy_adapter.php,
                    Support/FixtureHttpClient.php, fixtures/*.json
 docs/             TRV-001-C.md, TRV-002.md, TRV-004.md, TRV-006-recherche-ebay.md,
                    TRV-007-ebay-production.md, TRV-008-marge-chasses.md,
+                   TRV-009-etsy-adapter.md,
                    AV-UI-001.md, TRV-UI-002.md, TRV-002-A/B-*.md, TRV-003-A-*.md,
                    TRV-005-*.md (rapports de mission), brand-v1/ (charte)
 ```
