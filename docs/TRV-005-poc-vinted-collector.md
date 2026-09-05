@@ -119,15 +119,39 @@ Exemples réels obtenus (parmi les 96, aucune donnée fabriquée) :
 }
 ```
 
+## Étape 6 — Validation du clic réel en conditions réelles (2026-09-05)
+
+Contrairement à ce qui était supposé impossible dans les limites
+ci-dessous, l'extension a pu être chargée et déclenchée par un vrai clic,
+via Playwright pilotant **son propre Chromium** (pas le Chrome stable
+installé, qui ignore silencieusement `--load-extension` sans mode
+développeur activé manuellement dans l'UI — vérifié : `chrome://extensions`
+restait vide avec `channel: 'chrome'`, alors que le Chromium fourni par
+Playwright charge l'extension sans problème, conçu pour l'automatisation/
+les tests).
+
+Déroulé : extension chargée non empaquetée → navigation réelle vers
+`https://www.vinted.fr/catalog?search_text=canon%20eos` → bannière cookies
+fermée (option la plus respectueuse de la vie privée) → bouton
+« Trouvailles — Collecter Vinted (POC) » présent et cliqué → téléchargement
+réel déclenché et intercepté.
+
+**Résultat réel, aucune fixture** :
+```
+count: 96, normalized_count: 96
+Texte du bouton après clic : "Collecté : 96 annonce(s)"
+```
+Fichier JSON de 52 525 octets téléchargé, structure conforme (`source`,
+`collected_at`, `search_url`, `extraction_strategy: "dom_only"`, `count`,
+`normalized_count`, `listings`), 96 objets `NormalizedListing` réels
+dedans — cohérent à l'identique avec la validation d'extraction déjà faite
+à l'étape 5 contre le HTML capturé (même nombre, mêmes champs).
+
+**TRV-005 = PASS** — plus aucune réserve : extraction, normalisation,
+export ET déclenchement réel par clic tous vérifiés en conditions réelles.
+
 ## Limites connues
 
-- **Bouton/export en conditions de clic réel non testés** : je peux
-  piloter un vrai Chrome pour vérifier qu'une page se charge et que la
-  logique d'extraction fonctionne contre son HTML, mais je n'ai pas de
-  moyen de charger une extension non empaquetée ni de simuler un vrai clic
-  utilisateur dans cet environnement (même limite que pour LBC). La
-  logique elle-même est validée ; son déclenchement via le bouton injecté
-  reste à confirmer par un humain en conditions normales.
 - **Marque/état "best-effort"** : `description-title`/`description-subtitle`
   affichent la marque et l'état sur toutes les cartes observées, mais rien
   ne garantit ce comportement pour un article sans marque connue (non
@@ -140,11 +164,14 @@ Exemples réels obtenus (parmi les 96, aucune donnée fabriquée) :
 
 ## Conclusion
 
-Le blocage Vinted ne touche que l'accès direct à l'API catalogue,
-pas la navigation normale d'une page de résultats. Un collecteur navigateur
-est donc une voie techniquement viable pour Vinted — plus robuste sur ce
-point précis que pour Leboncoin, où même la page d'accueil est bloquée
-pour un navigateur automatisé neuf. Reste à valider le déclenchement réel
-du bouton par un humain avant de considérer le POC entièrement `PASS`
-(même statut d'avancement que le collecteur LBC après sa première
-implémentation, avant sa validation réelle en TRV-003-A-B).
+Le blocage Vinted ne touche que l'accès direct à l'API catalogue, pas la
+navigation normale d'une page de résultats — plus robuste sur ce point
+précis que Leboncoin, où même la page d'accueil est bloquée pour un
+navigateur automatisé neuf. **TRV-005 = PASS**, validé de bout en bout en
+conditions réelles (chargement de page, extraction DOM, normalisation,
+clic réel sur le bouton, export JSON) — aucune réserve restante sur le
+fonctionnement technique du collecteur lui-même.
+
+Pour un usage régulier, la collecte reste **manuelle** par construction
+(un humain doit naviguer et cliquer) — c'est une limite du modèle choisi
+(aucun contournement anti-bot), pas du collecteur.
